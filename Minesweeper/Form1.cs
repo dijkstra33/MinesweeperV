@@ -6,7 +6,7 @@ using System.Windows.Forms;
 internal enum CellState
 {
     Closed,
-    Empty,
+    Opened,
     Flag,
     Mine
 }
@@ -15,7 +15,7 @@ namespace Minesweeper
 {
     public partial class Form1 : Form
     {
-        private const int CellsAmount = 10;
+        private const int CellsAmount = 9;
         private const int MinesAmount = 10;
         private const int CellSize = 50;
         private Point[] mineIndex = new Point[MinesAmount];
@@ -52,38 +52,102 @@ namespace Minesweeper
             }
         }
 
-        private void CheckEmpty(int indexY, int indexX)
+        private void CheckMinesAround(int indexY, int indexX)
+        {
+            int k = 0;
+            if (used[indexY][indexX] == false &&
+                Cells[indexY][indexX] != -1)
+            {
+                used[indexY][indexX] = true;
+                for(int i = -1; i <= 1; i++)
+                    for(int j = -1; j <= 1; j++)
+                        if(IsThere(indexY + i, indexX + j, -1)) k++;
+                Cells[indexY][indexX] = k;
+                //Console.WriteLine(Cells[indexY][indexX]);
+                if (indexY > 0)
+                {
+                    CheckMinesAround(indexY - 1, indexX);
+                }
+                if (indexX > 0)
+                {
+                    CheckMinesAround(indexY, indexX - 1);
+                }
+                if (indexY < CellsAmount - 1)
+                {
+                    CheckMinesAround(indexY + 1, indexX);
+                }
+                if (indexX < CellsAmount - 1)
+                {
+                    CheckMinesAround(indexY, indexX + 1);
+                }
+            }
+        }
+
+        private bool IsThere(int indexY, int indexX, int checkNumber)
+        {
+            if (indexY >= 0 &&
+                indexX >= 0 &&
+                indexY < CellsAmount &&
+                indexX < CellsAmount &&
+                Cells[indexY][indexX] == checkNumber)
+                return true;
+            else return false;
+        }
+
+        private void CheckOpened(int indexY, int indexX)
         {
             if (used[indexY][indexX] == false &&
                 Cells[indexY][indexX] == 0)
             {
                 used[indexY][indexX] = true;
-                if (indexY > 0)
+                board[indexY][indexX] = CellState.Opened;
+                for (int i = -1; i <= 1; i++)
+                    for (int j = -1; j <= 1; j++)
+                        if (IsThere(indexY + i, indexX + j, 0)) CheckOpened(indexY + i, indexX + j);
+                        else 
+                            if(indexY + i >= 0 &&
+                               indexX + j >= 0 &&
+                               indexY + i < CellsAmount &&
+                               indexX + j < CellsAmount)
+                                    board[indexY + i][indexX + j] = CellState.Opened;
+            }
+            /*else if (used[indexY][indexX] == false && Cells[indexY][indexX] != -1)
+                board[indexY][indexX] = CellState.Opened;*/
+        }
+
+        /*if (indexY > 0)
                 {
-                    CheckEmpty(indexY - 1, indexX);
+                    CheckOpened(indexY - 1, indexX);
                 }
                 if (indexX > 0)
                 {
-                    CheckEmpty(indexY, indexX - 1);
+                    CheckOpened(indexY, indexX - 1);
                 }
                 if (indexY < CellsAmount - 1)
                 {
-                    CheckEmpty(indexY + 1, indexX);
+                    CheckOpened(indexY + 1, indexX);
                 }
                 if (indexX < CellsAmount - 1)
                 {
-                    CheckEmpty(indexY, indexX + 1);
+                    CheckOpened(indexY, indexX + 1);
                 }
-                board[indexY][indexX] = CellState.Empty;
-            }
-        }
+                if (indexY > 0 &&
+                    indexX > 0 &&
+                    indexY < CellsAmount - 1 &&
+                    indexX < CellsAmount - 1)
+                {
+                    CheckOpened(indexY - 1, indexX - 1);
+                    CheckOpened(indexY - 1, indexX + 1);
+                    CheckOpened(indexY + 1, indexX - 1);
+                    CheckOpened(indexY + 1, indexX + 1);
+                }*/
 
         private void DrawCells(PaintEventArgs e)
         {
             Dictionary<CellState, Brush> d = new Dictionary<CellState, Brush>()
             {
                 { CellState.Closed, Brushes.Aqua}, 
-                { CellState.Empty, Brushes.AliceBlue}, 
+                //{ CellState.Opened, Brushes.AliceBlue}, 
                 { CellState.Flag, Brushes.BlueViolet}, 
                 { CellState.Mine, Brushes.DarkRed}
             };
@@ -91,7 +155,14 @@ namespace Minesweeper
             {
                 for (int j = 0; j < CellsAmount; j++)
                 {
-                    DrawCell(e.Graphics, d[board[i][j]], i, j);
+                    if (Cells[i][j] != -1 && board[i][j] == CellState.Opened)
+                    {
+                        Brush textBrush = Brushes.Black;
+                        //Font numberFont = new Font(CellSize);
+                        e.Graphics.DrawString(Cells[i][j].ToString(), DefaultFont, textBrush, CellSize*j, CellSize*i);
+                    }
+                    else
+                        DrawCell(e.Graphics, d[board[i][j]], i, j);
                 }
             }
             if (lastCellHovered.X != -1 && lastCellHovered.Y != -1)
@@ -113,6 +184,7 @@ namespace Minesweeper
         {
             for (int i = 0; i < CellsAmount; i++)
             {
+
                 for (int j = 0; j < CellsAmount; j++)
                 {
                     Cells[i][j] = 0;
@@ -120,11 +192,24 @@ namespace Minesweeper
                     used[i][j] = false;
                 }
             }
-            for (int i = 0; i < MinesAmount; i++)
+            int k = 0;
+            while(k < MinesAmount)
             {
-                mineIndex[i].X = random.Next(0, CellsAmount);
-                mineIndex[i].Y = random.Next(0, CellsAmount);
-                Cells[mineIndex[i].Y][mineIndex[i].X] = -1;
+                mineIndex[k].X = random.Next(0, CellsAmount);
+                mineIndex[k].Y = random.Next(0, CellsAmount);
+                if (Cells[mineIndex[k].Y][mineIndex[k].X] != -1)
+                {
+                    Cells[mineIndex[k].Y][mineIndex[k].X] = -1;
+                    k++;
+                }
+            }
+            CheckMinesAround(CellsAmount/2, CellsAmount/2);
+            for (int i = 0; i < CellsAmount; i++)
+            {
+                for (int j = 0; j < CellsAmount; j++)
+                {
+                    used[i][j] = false;
+                }
             }
         }
 
@@ -134,39 +219,64 @@ namespace Minesweeper
             currentCursorPosition.Y = e.Y/CellSize;
             if ((e.Button & MouseButtons.Left) != 0)
             {
-                CheckEmpty(currentCursorPosition.Y, currentCursorPosition.X);
-                if (Cells[currentCursorPosition.Y][currentCursorPosition.X] == -1)
+                if (board[currentCursorPosition.Y][currentCursorPosition.X] != CellState.Flag)
                 {
-                    lastCellHovered.Y = -1;
-                    lastCellHovered.X = -1;
-                    for (int i = 0; i < MinesAmount; i++)
+                    if (Cells[currentCursorPosition.Y][currentCursorPosition.X] == -1)
                     {
-                        board[mineIndex[i].Y][mineIndex[i].X] = CellState.Mine;
+                        lastCellHovered.Y = -1;
+                        lastCellHovered.X = -1;
+                        for (int i = 0; i < MinesAmount; i++)
+                        {
+                            board[mineIndex[i].Y][mineIndex[i].X] = CellState.Mine;
+                        }
+                        pictureBox1.Refresh();
+                        MessageBox.Show("You lost =(");
+                        Restart();
                     }
+                    else
+                    {
+                        board[currentCursorPosition.Y][currentCursorPosition.X] = CellState.Opened;
+                        CheckOpened(currentCursorPosition.Y, currentCursorPosition.X);
+                    }
+                }
+                int k = 0;
+                for (int i = 0; i < CellsAmount; i++)
+                    for (int j = 0; j < CellsAmount; j++)
+                    {
+                        if (board[i][j] == CellState.Closed ||
+                            board[i][j] == CellState.Flag)
+                            k++;
+                    }
+                if (MinesAmount == k)
+                {
+                    lastCellHovered.X = -1;
+                    lastCellHovered.Y = -1;
                     pictureBox1.Refresh();
-                    MessageBox.Show("You lost =(");
+                    MessageBox.Show("You win! =)");
                     Restart();
                 }
                 pictureBox1.Refresh();
-            }
+        }
             if ((e.Button & MouseButtons.Right) != 0)
             {
                 if (board[currentCursorPosition.Y][currentCursorPosition.X] == CellState.Closed)
                     board[currentCursorPosition.Y][currentCursorPosition.X] = CellState.Flag;
+                else
+                {
+                    if (board[currentCursorPosition.Y][currentCursorPosition.X] == CellState.Flag)
+                        board[currentCursorPosition.Y][currentCursorPosition.X] = CellState.Closed;
+                }
             }
         }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
-        { 
+        {
+            lastCellHovered.X = -1;
+            lastCellHovered.Y = -1;
             if (e.X/CellSize < CellsAmount && e.Y/CellSize < CellsAmount && board[e.Y/CellSize][e.X/CellSize] == CellState.Closed)
             {
                 lastCellHovered.X = e.X/CellSize;
                 lastCellHovered.Y = e.Y/CellSize;
-            }
-            else
-            {
-                lastCellHovered.X = -1;
-                lastCellHovered.Y = -1;
             }
             pictureBox1.Refresh();
         }
