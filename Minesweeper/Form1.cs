@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Text;
 using System.Windows.Forms;
 
 internal enum CellState
@@ -19,10 +20,22 @@ namespace Minesweeper
         private const int MinesAmount = 10;
         private const int CellSize = 50;
         private Point[] mineIndex = new Point[MinesAmount];
-        private Point currentCursorPosition;
+        private Point clickedCell;
+
+        private Brush[] brushArray = new Brush[9]
+        {
+            Brushes.Black,
+            Brushes.Blue,
+            Brushes.Green,
+            Brushes.Red,
+            Brushes.DarkRed,
+            Brushes.DarkRed,
+            Brushes.DarkRed,
+            Brushes.DarkRed,
+            Brushes.DarkRed
+        };
         private Point lastCellHovered = new Point();
         private Random random = new Random();
-        private Timer timer1 = new Timer();
         private CellState[][] board = new CellState[CellsAmount][];
         private int[][] Cells = new int[CellsAmount][];
         private bool[][] used = new bool[CellsAmount][];
@@ -32,7 +45,6 @@ namespace Minesweeper
             InitializeComponent();
             ClientSize = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2);
             pictureBox1.Size = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2);
-            pictureBox1.Refresh();
             for (int i = 0; i < CellsAmount; i++)
             {
                 board[i] = new CellState[CellsAmount];
@@ -42,112 +54,109 @@ namespace Minesweeper
             Restart();
         }
 
+        private void Restart()
+        {
+            for (int i = 0; i < CellsAmount; i++)
+            {
+                for (int j = 0; j < CellsAmount; j++)
+                {
+                    Cells[i][j] = 0;
+                    board[i][j] = CellState.Closed;
+                    used[i][j] = false;
+                }
+            }
+            int k = 0;
+            while (k < MinesAmount)
+            {
+                mineIndex[k].X = random.Next(0, CellsAmount);
+                mineIndex[k].Y = random.Next(0, CellsAmount);
+                if (Cells[mineIndex[k].Y][mineIndex[k].X] != -1)
+                {
+                    Cells[mineIndex[k].Y][mineIndex[k].X] = -1;
+                    k++;
+                }
+            }
+            CheckMinesAround();
+        }
+
         private void DrawLines(PaintEventArgs e)
         {
-            Pen LinePen = Pens.Black;
+            Pen linePen = Pens.Black;
             for (int i = 0; i < CellsAmount + 1; i++)
             {
-                e.Graphics.DrawLine(LinePen, 0, i*CellSize, CellsAmount*CellSize, i*CellSize);
-                e.Graphics.DrawLine(LinePen, i*CellSize, 0, i*CellSize, CellsAmount*CellSize);
+                e.Graphics.DrawLine(linePen, 0, i*CellSize, CellsAmount*CellSize, i*CellSize);
+                e.Graphics.DrawLine(linePen, i*CellSize, 0, i*CellSize, CellsAmount*CellSize);
             }
         }
 
-        private void CheckMinesAround(int indexY, int indexX)
+        private void CheckMinesAround()
         {
-            int k = 0;
-            if (used[indexY][indexX] == false &&
-                Cells[indexY][indexX] != -1)
+            for (int i = 0; i < CellsAmount; i++)
             {
-                used[indexY][indexX] = true;
-                for(int i = -1; i <= 1; i++)
-                    for(int j = -1; j <= 1; j++)
-                        if(IsThere(indexY + i, indexX + j, -1)) k++;
-                Cells[indexY][indexX] = k;
-                //Console.WriteLine(Cells[indexY][indexX]);
-                if (indexY > 0)
+                for (int j = 0; j < CellsAmount; j++)
                 {
-                    CheckMinesAround(indexY - 1, indexX);
-                }
-                if (indexX > 0)
-                {
-                    CheckMinesAround(indexY, indexX - 1);
-                }
-                if (indexY < CellsAmount - 1)
-                {
-                    CheckMinesAround(indexY + 1, indexX);
-                }
-                if (indexX < CellsAmount - 1)
-                {
-                    CheckMinesAround(indexY, indexX + 1);
+                    if(Cells[i][j] != -1)
+                    {
+                        int k = 0;
+                        for (int p = -1; p <= 1; p++)  //Todo: 2 for's into method
+                        {
+                            for (int q = -1; q <= 1; q++)
+                            {
+                                if (IsThere(i + p, j + q, -1))
+                                    k++;
+                            }
+                            Cells[i][j] = k;
+                        }
+                    }
                 }
             }
         }
 
         private bool IsThere(int indexY, int indexX, int checkNumber)
         {
-            if (indexY >= 0 &&
-                indexX >= 0 &&
-                indexY < CellsAmount &&
-                indexX < CellsAmount &&
-                Cells[indexY][indexX] == checkNumber)
-                return true;
-            else return false;
+            return indexY >= 0 &&
+                   indexX >= 0 &&
+                   indexY < CellsAmount &&
+                   indexX < CellsAmount &&
+                   Cells[indexY][indexX] == checkNumber;
         }
 
         private void CheckOpened(int indexY, int indexX)
         {
-            if (used[indexY][indexX] == false &&
+            if (!used[indexY][indexX] &&
                 Cells[indexY][indexX] == 0)
             {
                 used[indexY][indexX] = true;
                 board[indexY][indexX] = CellState.Opened;
                 for (int i = -1; i <= 1; i++)
+                {
                     for (int j = -1; j <= 1; j++)
-                        if (IsThere(indexY + i, indexX + j, 0)) CheckOpened(indexY + i, indexX + j);
+                    {
+                        if (IsThere(indexY + i, indexX + j, 0))
+                            CheckOpened(indexY + i, indexX + j);
                         else 
-                            if(indexY + i >= 0 &&
-                               indexX + j >= 0 &&
-                               indexY + i < CellsAmount &&
-                               indexX + j < CellsAmount)
+                            if (indexY + i >= 0 &&            //Todo: add a method if possible
+                                indexX + j >= 0 &&
+                                indexY + i < CellsAmount &&
+                                indexX + j < CellsAmount)
                                     board[indexY + i][indexX + j] = CellState.Opened;
+                    }
+                }
             }
-            /*else if (used[indexY][indexX] == false && Cells[indexY][indexX] != -1)
-                board[indexY][indexX] = CellState.Opened;*/
         }
-
-        /*if (indexY > 0)
-                {
-                    CheckOpened(indexY - 1, indexX);
-                }
-                if (indexX > 0)
-                {
-                    CheckOpened(indexY, indexX - 1);
-                }
-                if (indexY < CellsAmount - 1)
-                {
-                    CheckOpened(indexY + 1, indexX);
-                }
-                if (indexX < CellsAmount - 1)
-                {
-                    CheckOpened(indexY, indexX + 1);
-                }
-                if (indexY > 0 &&
-                    indexX > 0 &&
-                    indexY < CellsAmount - 1 &&
-                    indexX < CellsAmount - 1)
-                {
-                    CheckOpened(indexY - 1, indexX - 1);
-                    CheckOpened(indexY - 1, indexX + 1);
-                    CheckOpened(indexY + 1, indexX - 1);
-                    CheckOpened(indexY + 1, indexX + 1);
-                }*/
 
         private void DrawCells(PaintEventArgs e)
         {
-            Dictionary<CellState, Brush> d = new Dictionary<CellState, Brush>()
+            Font numberFont = new Font(new FontFamily(GenericFontFamilies.SansSerif), 14);
+            StringFormat stringFormat = new StringFormat()
             {
-                { CellState.Closed, Brushes.Aqua}, 
-                //{ CellState.Opened, Brushes.AliceBlue}, 
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+            Dictionary<CellState, Brush> brushes = new Dictionary<CellState, Brush>()
+            {
+                { CellState.Closed, Brushes.Aqua},
+                { CellState.Opened, Brushes.AliceBlue},
                 { CellState.Flag, Brushes.BlueViolet}, 
                 { CellState.Mine, Brushes.DarkRed}
             };
@@ -155,14 +164,14 @@ namespace Minesweeper
             {
                 for (int j = 0; j < CellsAmount; j++)
                 {
-                    if (Cells[i][j] != -1 && board[i][j] == CellState.Opened)
+                    if (Cells[i][j] > 0 && board[i][j] == CellState.Opened)
                     {
-                        Brush textBrush = Brushes.Black;
-                        //Font numberFont = new Font(CellSize);
-                        e.Graphics.DrawString(Cells[i][j].ToString(), DefaultFont, textBrush, CellSize*j, CellSize*i);
+                        Brush textBrush = brushArray[Cells[i][j]];
+                        e.Graphics.DrawString(Cells[i][j].ToString(), numberFont, textBrush,
+                            new RectangleF(CellSize*j, CellSize*i, CellSize, CellSize), stringFormat);
                     }
                     else
-                        DrawCell(e.Graphics, d[board[i][j]], i, j);
+                        DrawCell(e.Graphics, brushes[board[i][j]], i, j);
                 }
             }
             if (lastCellHovered.X != -1 && lastCellHovered.Y != -1)
@@ -180,48 +189,15 @@ namespace Minesweeper
             DrawCells(e);
         }
 
-        private void Restart()
-        {
-            for (int i = 0; i < CellsAmount; i++)
-            {
-
-                for (int j = 0; j < CellsAmount; j++)
-                {
-                    Cells[i][j] = 0;
-                    board[i][j] = CellState.Closed;
-                    used[i][j] = false;
-                }
-            }
-            int k = 0;
-            while(k < MinesAmount)
-            {
-                mineIndex[k].X = random.Next(0, CellsAmount);
-                mineIndex[k].Y = random.Next(0, CellsAmount);
-                if (Cells[mineIndex[k].Y][mineIndex[k].X] != -1)
-                {
-                    Cells[mineIndex[k].Y][mineIndex[k].X] = -1;
-                    k++;
-                }
-            }
-            CheckMinesAround(CellsAmount/2, CellsAmount/2);
-            for (int i = 0; i < CellsAmount; i++)
-            {
-                for (int j = 0; j < CellsAmount; j++)
-                {
-                    used[i][j] = false;
-                }
-            }
-        }
-
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
-            currentCursorPosition.X = e.X/CellSize;
-            currentCursorPosition.Y = e.Y/CellSize;
+            clickedCell.X = e.X/CellSize;
+            clickedCell.Y = e.Y/CellSize;
             if ((e.Button & MouseButtons.Left) != 0)
             {
-                if (board[currentCursorPosition.Y][currentCursorPosition.X] != CellState.Flag)
+                if (board[clickedCell.Y][clickedCell.X] != CellState.Flag)
                 {
-                    if (Cells[currentCursorPosition.Y][currentCursorPosition.X] == -1)
+                    if (Cells[clickedCell.Y][clickedCell.X] == -1)
                     {
                         lastCellHovered.Y = -1;
                         lastCellHovered.X = -1;
@@ -235,19 +211,19 @@ namespace Minesweeper
                     }
                     else
                     {
-                        board[currentCursorPosition.Y][currentCursorPosition.X] = CellState.Opened;
-                        CheckOpened(currentCursorPosition.Y, currentCursorPosition.X);
+                        board[clickedCell.Y][clickedCell.X] = CellState.Opened;
+                        CheckOpened(clickedCell.Y, clickedCell.X);
                     }
                 }
-                int k = 0;
+                int cellsLeft = 0;
                 for (int i = 0; i < CellsAmount; i++)
                     for (int j = 0; j < CellsAmount; j++)
                     {
                         if (board[i][j] == CellState.Closed ||
                             board[i][j] == CellState.Flag)
-                            k++;
+                            cellsLeft++;
                     }
-                if (MinesAmount == k)
+                if (MinesAmount == cellsLeft)
                 {
                     lastCellHovered.X = -1;
                     lastCellHovered.Y = -1;
@@ -255,16 +231,17 @@ namespace Minesweeper
                     MessageBox.Show("You win! =)");
                     Restart();
                 }
-                pictureBox1.Refresh();
-        }
+            }
             if ((e.Button & MouseButtons.Right) != 0)
             {
-                if (board[currentCursorPosition.Y][currentCursorPosition.X] == CellState.Closed)
-                    board[currentCursorPosition.Y][currentCursorPosition.X] = CellState.Flag;
-                else
+                switch (board[clickedCell.Y][clickedCell.X])
                 {
-                    if (board[currentCursorPosition.Y][currentCursorPosition.X] == CellState.Flag)
-                        board[currentCursorPosition.Y][currentCursorPosition.X] = CellState.Closed;
+                    case CellState.Closed:
+                        board[clickedCell.Y][clickedCell.X] = CellState.Flag;
+                        break;
+                    case CellState.Flag:
+                        board[clickedCell.Y][clickedCell.X] = CellState.Closed;
+                        break;
                 }
             }
         }
@@ -273,10 +250,12 @@ namespace Minesweeper
         {
             lastCellHovered.X = -1;
             lastCellHovered.Y = -1;
-            if (e.X/CellSize < CellsAmount && e.Y/CellSize < CellsAmount && board[e.Y/CellSize][e.X/CellSize] == CellState.Closed)
+            int cellX = e.X / CellSize;
+            int cellY = e.Y / CellSize;
+            if (cellX < CellsAmount && cellY < CellsAmount && board[cellY][cellX] == CellState.Closed)
             {
-                lastCellHovered.X = e.X/CellSize;
-                lastCellHovered.Y = e.Y/CellSize;
+                lastCellHovered.X = cellX;
+                lastCellHovered.Y = cellY;
             }
             pictureBox1.Refresh();
         }
