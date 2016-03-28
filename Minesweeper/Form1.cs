@@ -39,12 +39,15 @@ namespace Minesweeper
         private CellState[][] board = new CellState[CellsAmount][];
         private int[][] Cells = new int[CellsAmount][];
         private bool[][] used = new bool[CellsAmount][];
+        private Icon mineIcon = Icon.ExtractAssociatedIcon("C:/projects/Minesweeper/mine.png");
 
         public Form1()
         {
             InitializeComponent();
-            ClientSize = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2);
+            ClientSize = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2 + menuStrip2.Height);
             pictureBox1.Size = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2);
+            pictureBox1.Location = new Point(0, menuStrip2.Height);
+
             for (int i = 0; i < CellsAmount; i++)
             {
                 board[i] = new CellState[CellsAmount];
@@ -169,6 +172,8 @@ namespace Minesweeper
                         Brush textBrush = brushArray[Cells[i][j]];
                         e.Graphics.DrawString(Cells[i][j].ToString(), numberFont, textBrush,
                             new RectangleF(CellSize*j, CellSize*i, CellSize, CellSize), stringFormat);
+                        if(Cells[i][j] == -1)
+                            e.Graphics.DrawIcon(mineIcon, CellSize * j, CellSize * i);
                     }
                     else
                         DrawCell(e.Graphics, brushes[board[i][j]], i, j);
@@ -187,6 +192,26 @@ namespace Minesweeper
         {
             DrawLines(e);
             DrawCells(e);
+        }
+
+        private bool CheckVictory()
+        {
+            int cellsLeft = 0;
+            for (int i = 0; i < CellsAmount; i++)
+                for (int j = 0; j < CellsAmount; j++)
+                {
+                    if (board[i][j] == CellState.Closed ||
+                        board[i][j] == CellState.Flag)
+                        cellsLeft++;
+                }
+            if (MinesAmount == cellsLeft)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
@@ -215,15 +240,7 @@ namespace Minesweeper
                         CheckOpened(clickedCell.Y, clickedCell.X);
                     }
                 }
-                int cellsLeft = 0;
-                for (int i = 0; i < CellsAmount; i++)
-                    for (int j = 0; j < CellsAmount; j++)
-                    {
-                        if (board[i][j] == CellState.Closed ||
-                            board[i][j] == CellState.Flag)
-                            cellsLeft++;
-                    }
-                if (MinesAmount == cellsLeft)
+                if (CheckVictory())
                 {
                     lastCellHovered.X = -1;
                     lastCellHovered.Y = -1;
@@ -244,6 +261,62 @@ namespace Minesweeper
                         break;
                 }
             }
+            if ((e.Button & MouseButtons.Middle) != 0)
+            {
+                int k = 0;
+                for (int i = -1; i <= 1; i++)
+                {
+                    for (int j = -1; j <= 1; j++)
+                    {
+                        if (clickedCell.Y + i >= 0 &&
+                                clickedCell.X + j >= 0 &&
+                                clickedCell.Y + i < CellsAmount &&
+                                clickedCell.X + j < CellsAmount)
+                            if (board[clickedCell.Y + i][clickedCell.X + j] == CellState.Flag)
+                            {
+                                k++;
+                            }
+                    }
+                }
+                if (Cells[clickedCell.Y][clickedCell.X] == k && board[clickedCell.Y][clickedCell.X] != CellState.Closed)
+                {
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        for (int j = -1; j <= 1; j++)
+                        {
+                            if (clickedCell.Y + i >= 0 &&
+                                clickedCell.X + j >= 0 &&
+                                clickedCell.Y + i < CellsAmount &&
+                                clickedCell.X + j < CellsAmount)
+                                    if (board[clickedCell.Y + i][clickedCell.X + j] == CellState.Closed)
+                                    {
+                                        if (Cells[clickedCell.Y + i][clickedCell.X + j] == -1)
+                                        {
+                                            for (int m = 0; m < MinesAmount; m++)
+                                            {
+                                                board[mineIndex[m].Y][mineIndex[m].X] = CellState.Mine;
+                                            }
+                                            pictureBox1.Refresh();
+                                            MessageBox.Show("You lost =(");
+                                            Restart();
+                                            return;
+                                        } 
+                                        board[clickedCell.Y + i][clickedCell.X + j] = CellState.Opened;
+                                        CheckOpened(clickedCell.Y + i, clickedCell.X + j);
+                                    }
+                        }
+                    }
+                    if (CheckVictory())
+                    {
+                        lastCellHovered.X = -1;
+                        lastCellHovered.Y = -1;
+                        pictureBox1.Refresh();
+                        MessageBox.Show("You win! =)");
+                        Restart();
+                    }
+                }
+            }
+            pictureBox1.Refresh();
         }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
@@ -258,6 +331,12 @@ namespace Minesweeper
                 lastCellHovered.Y = cellY;
             }
             pictureBox1.Refresh();
+        }
+
+        private void settingsToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            var settingsForm = new SettingsForm();
+            settingsForm.ShowDialog();
         }
     }
 }
