@@ -17,5 +17,9 @@ namespace Minesweeper
             InitializeComponent();
         }
 
+        private void SaveSettings_Click(object sender, EventArgs e)
+        {
+            Close();
+        }
     }
 }
