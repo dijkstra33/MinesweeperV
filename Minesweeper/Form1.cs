@@ -269,6 +269,7 @@ namespace Minesweeper
                         }
                         pictureBox1.Refresh();
                         MessageBox.Show("You lost =(");
+                        timer1.Stop();
                         Restart();
                     }
                     else
@@ -283,6 +284,7 @@ namespace Minesweeper
                     lastCellHovered.Y = -1;
                     pictureBox1.Refresh();
                     MessageBox.Show("You won! =)");
+                    timer1.Stop();
                     Restart();
                 }
             }
@@ -329,6 +331,7 @@ namespace Minesweeper
                                             }
                                             pictureBox1.Refresh();
                                             MessageBox.Show("You lost! =(");
+                                            timer1.Stop();
                                             Restart();
                                             return;
                                         } 
@@ -343,6 +346,7 @@ namespace Minesweeper
                         lastCellHovered.Y = -1;
                         pictureBox1.Refresh();
                         MessageBox.Show("You won! =)");
+                        timer1.Stop();
                         Restart();
                     }
                 }
