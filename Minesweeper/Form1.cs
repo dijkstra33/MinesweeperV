@@ -21,6 +21,7 @@ namespace Minesweeper
         public int CellSize = 50;
         private Point[] mineIndex = new Point[MaxCellsAmount];
         private Point clickedCell;
+        private int timePlayed;
 
         private Brush[] brushArray = new Brush[9]
         {
@@ -34,7 +35,8 @@ namespace Minesweeper
             Brushes.DarkRed,
             Brushes.DarkRed
         };
-        private Point lastCellHovered = new Point();
+
+        private Point lastCellHovered;
         private Random random = new Random();
         private CellState[][] board = new CellState[MaxCellsAmount][];
         private int[][] Cells = new int[MaxCellsAmount][];
@@ -45,9 +47,12 @@ namespace Minesweeper
         public Form1()
         {
             InitializeComponent();
-            ClientSize = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2 + menuStrip2.Height);
+            ClientSize = new Size(CellsAmount*CellSize + 2,
+                CellsAmount*CellSize + 2 + menuStrip2.Height + minesLeftLabel.Height);
             pictureBox1.Size = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2);
-            pictureBox1.Location = new Point(0, menuStrip2.Height);
+            pictureBox1.Location = new Point(0, menuStrip2.Height + minesLeftLabel.Height);
+            minesLeftLabel.Location = new Point(0, menuStrip2.Height);
+            timeLabel.Location = new Point(CellsAmount*CellSize + 2 - timeLabel.Width, menuStrip2.Height);
 
             for (int i = 0; i < CellsAmount; i++)
             {
@@ -60,6 +65,8 @@ namespace Minesweeper
 
         private void Restart()
         {
+            timer1.Enabled = false;
+            timeLabel.Text = "0:0:0";
             for (int i = 0; i < CellsAmount; i++)
             {
                 for (int j = 0; j < CellsAmount; j++)
@@ -99,7 +106,7 @@ namespace Minesweeper
             {
                 for (int j = 0; j < CellsAmount; j++)
                 {
-                    if(Cells[i][j] != -1)
+                    if (Cells[i][j] != -1)
                     {
                         Cells[i][j] = CountMinesAround(i, j);
                     }
@@ -140,9 +147,8 @@ namespace Minesweeper
                     {
                         if (IsThere(indexY + i, indexX + j, 0))
                             CheckOpened(indexY + i, indexX + j);
-                        else 
-                            if (InBoard(indexY + i, indexX + j))
-                                board[indexY + i][indexX + j] = CellState.Opened;
+                        else if (InBoard(indexY + i, indexX + j))
+                            board[indexY + i][indexX + j] = CellState.Opened;
                     }
                 }
             }
@@ -166,9 +172,9 @@ namespace Minesweeper
             };
             Dictionary<CellState, Brush> brushes = new Dictionary<CellState, Brush>()
             {
-                { CellState.Closed, Brushes.Aqua},
-                { CellState.Opened, Brushes.AliceBlue},
-                { CellState.Flag, Brushes.DarkCyan}
+                {CellState.Closed, Brushes.Aqua},
+                {CellState.Opened, Brushes.AliceBlue},
+                {CellState.Flag, Brushes.DarkCyan}
             };
             for (int i = 0; i < CellsAmount; i++)
             {
@@ -190,8 +196,8 @@ namespace Minesweeper
                     else
                     {
                         DrawCell(e.Graphics, brushes[board[i][j]], i, j);
-                        if(board[i][j] == CellState.Flag)
-                            e.Graphics.DrawImage(flagImage, j * CellSize, i * CellSize, CellSize, CellSize);
+                        if (board[i][j] == CellState.Flag)
+                            e.Graphics.DrawImage(flagImage, j*CellSize, i*CellSize, CellSize, CellSize);
                     }
 
                 }
@@ -209,6 +215,21 @@ namespace Minesweeper
         {
             DrawLines(e);
             DrawCells(e);
+            MinesLeft();
+        }
+
+        private void MinesLeft()
+        {
+            int minesLeft = MinesAmount;
+            for (int i = 0; i < CellsAmount; i++)
+            {
+                for (int j = 0; j < CellsAmount; j++)
+                {
+                    if (board[i][j] == CellState.Flag && minesLeft > 0)
+                        minesLeft--;
+                }
+            }
+            minesLeftLabel.Text = "Mines left: " + minesLeft;
         }
 
         private bool CheckVictory()
@@ -228,6 +249,12 @@ namespace Minesweeper
         {
             clickedCell.X = e.X/CellSize;
             clickedCell.Y = e.Y/CellSize;
+            /*if (mouseClicks == 2)
+            {
+                MessageBox.Show("Test");
+                mouseClicks--;
+            }*/
+            timer1.Enabled = true;
             if ((e.Button & MouseButtons.Left) != 0)
             {
                 if (board[clickedCell.Y][clickedCell.X] != CellState.Flag)
@@ -255,7 +282,7 @@ namespace Minesweeper
                     lastCellHovered.X = -1;
                     lastCellHovered.Y = -1;
                     pictureBox1.Refresh();
-                    MessageBox.Show("You win! =)");
+                    MessageBox.Show("You won! =)");
                     Restart();
                 }
             }
@@ -301,7 +328,7 @@ namespace Minesweeper
                                                 board[mineIndex[m].Y][mineIndex[m].X] = CellState.Opened;
                                             }
                                             pictureBox1.Refresh();
-                                            MessageBox.Show("You lost =(");
+                                            MessageBox.Show("You lost! =(");
                                             Restart();
                                             return;
                                         } 
@@ -315,7 +342,7 @@ namespace Minesweeper
                         lastCellHovered.X = -1;
                         lastCellHovered.Y = -1;
                         pictureBox1.Refresh();
-                        MessageBox.Show("You win! =)");
+                        MessageBox.Show("You won! =)");
                         Restart();
                     }
                 }
@@ -341,6 +368,13 @@ namespace Minesweeper
         {
             var settingsForm = new SettingsForm();
             settingsForm.ShowDialog();
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            timePlayed++;
+            string time = timePlayed / 3600 % 24 + ":" + timePlayed / 60 % 60 + ":" + timePlayed % 60;
+            timeLabel.Text = time;
         }
     }
 }
