@@ -251,11 +251,6 @@ namespace Minesweeper
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
-            /*if (mouseClicks == 2)
-            {
-                MessageBox.Show("Test");
-                mouseClicks--;
-            }*/
             timer1.Enabled = true;
             if ((e.Button & MouseButtons.Left) != 0)
             {
@@ -417,7 +412,6 @@ namespace Minesweeper
             clickedButtons++;
             clickedCell.X = e.X / CellSize;
             clickedCell.Y = e.Y / CellSize;
-            Text = clickedButtons.ToString();
             if (clickedButtons == 2)
             {
                 SmartClick();
@@ -428,7 +422,6 @@ namespace Minesweeper
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
             clickedButtons--;
-            Text = clickedButtons.ToString();
         }
 
         private void pictureBox1_MouseLeave(object sender, EventArgs e)
