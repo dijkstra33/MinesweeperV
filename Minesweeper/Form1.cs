@@ -29,7 +29,7 @@ namespace Minesweeper
             Brushes.Blue,
             Brushes.Green,
             Brushes.Red,
-            Brushes.DarkRed,
+            Brushes.DarkBlue,
             Brushes.DarkRed,
             Brushes.DarkRed,
             Brushes.DarkRed,
@@ -66,7 +66,8 @@ namespace Minesweeper
         private void Restart()
         {
             timer1.Enabled = false;
-            timeLabel.Text = "0:0:0";
+            timeLabel.Text = "00:00:00";
+            timePlayed = 0;
             for (int i = 0; i < CellsAmount; i++)
             {
                 for (int j = 0; j < CellsAmount; j++)
@@ -268,8 +269,8 @@ namespace Minesweeper
                             board[mineIndex[i].Y][mineIndex[i].X] = CellState.Opened;
                         }
                         pictureBox1.Refresh();
-                        MessageBox.Show("You lost =(");
                         timer1.Stop();
+                        MessageBox.Show("You lost =(");
                         Restart();
                     }
                     else
@@ -377,7 +378,17 @@ namespace Minesweeper
         private void timer1_Tick(object sender, EventArgs e)
         {
             timePlayed++;
-            string time = timePlayed / 3600 % 24 + ":" + timePlayed / 60 % 60 + ":" + timePlayed % 60;
+            int hours = timePlayed / 3600 % 24,
+                minutes = timePlayed / 60 % 60, 
+                seconds = timePlayed % 60;
+            string timeSeconds, timeMinutes, timeHours;
+            if (seconds < 10) timeSeconds = 0.ToString() + seconds;
+            else timeSeconds = seconds.ToString();
+            if (minutes < 10) timeMinutes = 0.ToString() + minutes;
+            else timeMinutes = minutes.ToString();
+            if (hours < 10) timeHours = 0.ToString() + hours;
+            else timeHours = hours.ToString();
+            string time = timeHours + ":" + timeMinutes + ":" + timeSeconds;
             timeLabel.Text = time;
         }
     }
