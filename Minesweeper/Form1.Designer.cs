@@ -35,20 +35,24 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timeLabel = new System.Windows.Forms.Label();
             this.minesLeftLabel = new System.Windows.Forms.Label();
+            this.RestartButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.menuStrip2.SuspendLayout();
             this.SuspendLayout();
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Location = new System.Drawing.Point(0, 52);
+            this.pictureBox1.Location = new System.Drawing.Point(0, 49);
             this.pictureBox1.Name = "pictureBox1";
             this.pictureBox1.Size = new System.Drawing.Size(265, 224);
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Paint += new System.Windows.Forms.PaintEventHandler(this.pictureBox1_Paint);
             this.pictureBox1.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseClick);
+            this.pictureBox1.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseDown);
+            this.pictureBox1.MouseLeave += new System.EventHandler(this.pictureBox1_MouseLeave);
             this.pictureBox1.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseMove);
+            this.pictureBox1.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pictureBox1_MouseUp);
             // 
             // menuStrip2
             // 
@@ -56,7 +60,7 @@
             this.settingsToolStripMenuItem1});
             this.menuStrip2.Location = new System.Drawing.Point(0, 0);
             this.menuStrip2.Name = "menuStrip2";
-            this.menuStrip2.Size = new System.Drawing.Size(287, 24);
+            this.menuStrip2.Size = new System.Drawing.Size(294, 24);
             this.menuStrip2.TabIndex = 2;
             this.menuStrip2.Text = "menuStrip2";
             // 
@@ -94,15 +98,28 @@
             this.minesLeftLabel.TabIndex = 4;
             this.minesLeftLabel.Text = "Мин: 10";
             // 
+            // RestartButton
+            // 
+            this.RestartButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.RestartButton.Location = new System.Drawing.Point(12, 282);
+            this.RestartButton.Name = "RestartButton";
+            this.RestartButton.Size = new System.Drawing.Size(131, 39);
+            this.RestartButton.TabIndex = 5;
+            this.RestartButton.Text = "Restart";
+            this.RestartButton.UseVisualStyleBackColor = true;
+            this.RestartButton.Click += new System.EventHandler(this.RestartButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(287, 287);
+            this.ClientSize = new System.Drawing.Size(294, 326);
+            this.Controls.Add(this.RestartButton);
             this.Controls.Add(this.minesLeftLabel);
             this.Controls.Add(this.timeLabel);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.menuStrip2);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Form1";
@@ -123,6 +140,7 @@
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.Label timeLabel;
         private System.Windows.Forms.Label minesLeftLabel;
+        private System.Windows.Forms.Button RestartButton;
     }
 }
 

@@ -21,7 +21,8 @@ namespace Minesweeper
         public int CellSize = 50;
         private Point[] mineIndex = new Point[MaxCellsAmount];
         private Point clickedCell;
-        private int timePlayed;
+        private int timePlayed = 0;
+        private int clickedButtons = 0;
 
         private Brush[] brushArray = new Brush[9]
         {
@@ -41,18 +42,19 @@ namespace Minesweeper
         private CellState[][] board = new CellState[MaxCellsAmount][];
         private int[][] Cells = new int[MaxCellsAmount][];
         private bool[][] used = new bool[MaxCellsAmount][];
-        private Image mineImage = Image.FromFile("mine.png");
-        private Image flagImage = Image.FromFile("flag.png");
+        private Image mineImage = Properties.Resources.mine;
+        private Image flagImage = Properties.Resources.flag;
 
         public Form1()
         {
             InitializeComponent();
-            ClientSize = new Size(CellsAmount*CellSize + 2,
-                CellsAmount*CellSize + 2 + menuStrip2.Height + minesLeftLabel.Height);
+            ClientSize = new Size(CellsAmount*CellSize + 2 + 20,
+                CellsAmount*CellSize + 2 + menuStrip2.Height + minesLeftLabel.Height + RestartButton.Height + 10);
             pictureBox1.Size = new Size(CellsAmount*CellSize + 2, CellsAmount*CellSize + 2);
-            pictureBox1.Location = new Point(0, menuStrip2.Height + minesLeftLabel.Height);
-            minesLeftLabel.Location = new Point(0, menuStrip2.Height);
+            pictureBox1.Location = new Point(10, menuStrip2.Height + minesLeftLabel.Height);
+            minesLeftLabel.Location = new Point(10, menuStrip2.Height);
             timeLabel.Location = new Point(CellsAmount*CellSize + 2 - timeLabel.Width, menuStrip2.Height);
+            RestartButton.Location = new Point(ClientSize.Width / 2 - RestartButton.Width / 2, CellsAmount * CellSize + 2 + menuStrip2.Height + minesLeftLabel.Height + 10);
 
             for (int i = 0; i < CellsAmount; i++)
             {
@@ -89,6 +91,7 @@ namespace Minesweeper
                 }
             }
             CheckMinesAround();
+            pictureBox1.Refresh();
         }
 
         private void DrawLines(PaintEventArgs e)
@@ -141,7 +144,7 @@ namespace Minesweeper
                 Cells[indexY][indexX] == 0)
             {
                 used[indexY][indexX] = true;
-                board[indexY][indexX] = CellState.Opened;
+                if(board[indexY][indexX] != CellState.Flag) board[indexY][indexX] = CellState.Opened;
                 for (int i = -1; i <= 1; i++)
                 {
                     for (int j = -1; j <= 1; j++)
@@ -248,8 +251,6 @@ namespace Minesweeper
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
-            clickedCell.X = e.X/CellSize;
-            clickedCell.Y = e.Y/CellSize;
             /*if (mouseClicks == 2)
             {
                 MessageBox.Show("Test");
@@ -303,68 +304,82 @@ namespace Minesweeper
             }
             if ((e.Button & MouseButtons.Middle) != 0)
             {
-                int k = 0;
+                SmartClick();
+            }
+            pictureBox1.Refresh();
+        }
+
+        private void SmartClick()
+        {
+            int k = 0;
+            for (int i = -1; i <= 1; i++)
+            {
+                for (int j = -1; j <= 1; j++)
+                {
+                    if (InBoard(clickedCell.Y + i, clickedCell.X + j))
+                        if (board[clickedCell.Y + i][clickedCell.X + j] == CellState.Flag)
+                        {
+                            k++;
+                        }
+                }
+            }
+            if (Cells[clickedCell.Y][clickedCell.X] == k &&
+                board[clickedCell.Y][clickedCell.X] != CellState.Closed &&
+                board[clickedCell.Y][clickedCell.X] != CellState.Flag)
+            {
                 for (int i = -1; i <= 1; i++)
                 {
                     for (int j = -1; j <= 1; j++)
                     {
                         if (InBoard(clickedCell.Y + i, clickedCell.X + j))
-                            if (board[clickedCell.Y + i][clickedCell.X + j] == CellState.Flag)
+                            if (board[clickedCell.Y + i][clickedCell.X + j] == CellState.Closed)
                             {
-                                k++;
+                                if (Cells[clickedCell.Y + i][clickedCell.X + j] == -1)
+                                {
+                                    for (int m = 0; m < MinesAmount; m++)
+                                    {
+                                        board[mineIndex[m].Y][mineIndex[m].X] = CellState.Opened;
+                                    }
+                                    pictureBox1.Refresh();
+                                    timer1.Stop();
+                                    MessageBox.Show("You lost! =(");
+                                    Restart();
+                                    return;
+                                }
+                                board[clickedCell.Y + i][clickedCell.X + j] = CellState.Opened;
+                                CheckOpened(clickedCell.Y + i, clickedCell.X + j);
                             }
                     }
                 }
-                if (Cells[clickedCell.Y][clickedCell.X] == k && board[clickedCell.Y][clickedCell.X] != CellState.Closed)
+                if (CheckVictory())
                 {
-                    for (int i = -1; i <= 1; i++)
-                    {
-                        for (int j = -1; j <= 1; j++)
-                        {
-                            if (InBoard(clickedCell.Y + i, clickedCell.X + j))
-                                    if (board[clickedCell.Y + i][clickedCell.X + j] == CellState.Closed)
-                                    {
-                                        if (Cells[clickedCell.Y + i][clickedCell.X + j] == -1)
-                                        {
-                                            for (int m = 0; m < MinesAmount; m++)
-                                            {
-                                                board[mineIndex[m].Y][mineIndex[m].X] = CellState.Opened;
-                                            }
-                                            pictureBox1.Refresh();
-                                            MessageBox.Show("You lost! =(");
-                                            timer1.Stop();
-                                            Restart();
-                                            return;
-                                        } 
-                                        board[clickedCell.Y + i][clickedCell.X + j] = CellState.Opened;
-                                        CheckOpened(clickedCell.Y + i, clickedCell.X + j);
-                                    }
-                        }
-                    }
-                    if (CheckVictory())
-                    {
-                        lastCellHovered.X = -1;
-                        lastCellHovered.Y = -1;
-                        pictureBox1.Refresh();
-                        MessageBox.Show("You won! =)");
-                        timer1.Stop();
-                        Restart();
-                    }
+                    lastCellHovered.X = -1;
+                    lastCellHovered.Y = -1;
+                    pictureBox1.Refresh();
+                    timer1.Stop();
+                    MessageBox.Show("You won! =)");
+                    Restart();
                 }
             }
-            pictureBox1.Refresh();
         }
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
-            lastCellHovered.X = -1;
-            lastCellHovered.Y = -1;
             int cellX = e.X / CellSize;
             int cellY = e.Y / CellSize;
-            if (cellX < CellsAmount && cellY < CellsAmount && board[cellY][cellX] == CellState.Closed)
+            if (cellX < CellsAmount &&
+                cellY < CellsAmount &&
+                cellX >= 0 &&
+                cellY >= 0 && 
+                board[cellY][cellX] == CellState.Closed)
             {
                 lastCellHovered.X = cellX;
                 lastCellHovered.Y = cellY;
+            }
+            else
+            {
+                lastCellHovered.X = -1;
+                lastCellHovered.Y = -1;
             }
             pictureBox1.Refresh();
         }
@@ -391,5 +406,46 @@ namespace Minesweeper
             string time = timeHours + ":" + timeMinutes + ":" + timeSeconds;
             timeLabel.Text = time;
         }
+
+        private void RestartButton_Click(object sender, EventArgs e)
+        {
+            Restart();
+        }
+
+        private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            clickedButtons++;
+            clickedCell.X = e.X / CellSize;
+            clickedCell.Y = e.Y / CellSize;
+            Text = clickedButtons.ToString();
+            if (clickedButtons == 2)
+            {
+                SmartClick();
+                pictureBox1.Refresh();
+            }
+        }
+
+        private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
+        {
+            clickedButtons--;
+            Text = clickedButtons.ToString();
+        }
+
+        private void pictureBox1_MouseLeave(object sender, EventArgs e)
+        {
+            lastCellHovered.X = -1;
+            lastCellHovered.Y = -1;
+            pictureBox1.Refresh();
+        }
     }
 }
+
+//Дата - Время
+
+//DateTime elapsedTime = new DateTime();
+
+//private void timer1_Tick(object sender, EventArgs e)
+//{
+//    elapsedTime = elapsedTime.AddSeconds(1);
+//    label2.Text = String.Format("{0:H:mm:ss}", elapsedTime);
+//}
